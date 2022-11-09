@@ -6,7 +6,7 @@
     <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
-        Copyright 2013 Abram Hindle
+        Copyright 2013 Abram Hindle, 2022 Mateo Paez
         
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -38,32 +38,47 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
         if (xhr.readyState==4) {
             try {
                 if (xhr.status==200) {
-                    //XXX: parse some JSON from the request!
-                    //XXX: Pass the data to the callback!
+                    //XXX: parse some JSON from the request! - DONE
+                    //XXX: Pass the data to the callback! - DONE
+                    callback(JSON.parse(xhr.responseText));
                 }
             } 
             catch(e) {
-                alert('Error: ' + e.name);
+                alert('Error:' + e);
             }
         }
     };
-    //XXX: POST to a URL
-    //XXX: set the mimetype and the accept headers!
-    // Remember to use application/json !
+
+    // We don't want /world to be spam pinged POST so I check to see if there are any objects
+    // in the httpRequest. If there aren't any objects, we ping GET. If there are, we POST the object.
+    if (!objects) {
+        xhr.open('GET', url);
+        xhr.send();
+    } else {
+        //XXX: POST to a URL - DONE
+        //XXX: set the mimetype and the accept headers! - DONE
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.send(JSON.stringify(objects));
+    }
 }
 
 
 world = {};
 
-//XXX: TODO Make this prettier!
+//XXX: TODO Make this prettier! - DONE
 function drawCircle(context,entity) {
     with(context) {
         beginPath();              
-        lineWidth = 3;
+        lineWidth = 8;
         var x = entity["x"];
         var y = entity["y"];
+        var grd = context.createLinearGradient(x, y, x-5, y+5);
+        grd.addColorStop(0, "yellow");
+        grd.addColorStop(1, entity["colour"]);
         //moveTo(x,y);
-        fillStyle = entity["colour"];
+        fillStyle = grd;
         strokeStyle = fillStyle;
         arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
         stroke();                                
@@ -136,9 +151,9 @@ function getPosition(e) {
 
 function addEntity(entity, data) {
     world[entity] = data;
-    drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just  modified!
-
+    encodedEntity = encodeURIComponent(entity)
+    //XXX: Send a XHTML Request that updates the entity you just modified! - DONE
+    sendJSONXMLHTTPRequest(`/entity/${encodedEntity}`, data, () => null);
 }
 
 var counter = 0;
@@ -245,30 +260,29 @@ mouse = (function() {
 })();
 
 // Add the application specific mouse listeners!
-//XXX: TODO Make these prettier!
+//XXX: TODO Make these prettier! - DONE
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'red','radius':28});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'purple','radius':28});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    addEntityWithoutName({'x':x,'y':y,'colour':'orange','radius':20});
 });
 
 
 function update() {
-    //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    //XXX: TODO Get the world from the webservice using a XMLHTTPRequest - DONE
+    sendJSONXMLHTTPRequest(`/world`, null, (response) => world = response);
+    drawNextFrame();
     drawFrame();
 }
 
 // 30 frames per second
 setInterval( update, 1000/30.0);
-
-
 
     </script>
 </body>
